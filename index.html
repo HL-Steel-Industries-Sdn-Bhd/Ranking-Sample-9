@@ -7,7 +7,6 @@
 <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
 
 <style>
-/* ===== 你的所有 CSS 保留，未改动 ===== */
 body {
 margin: 0;
 height: 100vh;
@@ -166,12 +165,12 @@ to { text-shadow: 0 0 25px rgba(255,255,255,1); opacity: 0.9; }
 </div>
 
 <script>
-/* ========== 卡片结构定义（保留） ========== */
+/* ===== 卡片数据，key 对应 GAS JSON ===== */
 const cardData = [
-{ title: "Total Point Ranking", color: "#C1E1FF", key: "Total Point Ranking" },
-{ title: "Monthly Point Ranking", color: "#FFD8B1", key: "Monthly Point Ranking" },
-{ title: "Bounty Task Ranking", color: "#C1FFD7", key: "Bounty Task Ranking" },
-{ title: "Pending Ranking", color: "#C1E1FF", key: "Pending Ranking" }
+  { title: "Total Point Ranking", color: "#C1E1FF", key: "Total Point Ranking" },
+  { title: "Monthly Point Ranking", color: "#FFD8B1", key: "Monthly Point Ranking" },
+  { title: "Bounty Task Ranking", color: "#C1FFD7", key: "Bounty Task Ranking" },
+  { title: "Pending Ranking", color: "#C1E1FF", key: "Pending Ranking" }
 ];
 
 const colors = [
@@ -184,80 +183,85 @@ const colors = [
 const carousel = document.getElementById('carousel');
 let currentIndex = 0;
 
-/* ========== 创建卡片 HTML ========== */
+/* ===== 创建卡片 HTML ===== */
 function createCardHTML(card, headers, rows) {
-return `
-<div class="card" style="background:${card.color};">
-<div class="card-content">
-<h2>${card.title}</h2>
-<table>
-<tr>${headers.map(h => `<th>${h}</th>`).join('')}</tr>
-${rows.map(row => `<tr>${row.map(cell => `<td>${cell}</td>`).join('')}</tr>`).join('')}
-</table>
-</div>
-</div>
-`;
+  return `
+    <div class="card" style="background:${card.color};">
+      <div class="card-content">
+        <h2>${card.title}</h2>
+        <table>
+          <tr>${headers.map(h => `<th>${h}</th>`).join('')}</tr>
+          ${rows.map(row => `<tr>${row.map(cell => `<td>${cell}</td>`).join('')}</tr>`).join('')}
+        </table>
+      </div>
+    </div>
+  `;
 }
 
-/* ========== 载入 GS 数据 ========== */
+/* ===== 从 GAS 获取数据 ===== */
 async function loadDataFromGS() {
-const url = "https://script.google.com/macros/s/AKfycbx3QuxzX27N2eEGVkF0bDatl2kiwFst2b547AmBvDiPBTPuWWS-eRGjplp6ZHYox4i4/exec";  // ← 记得换！
-try {
-const res = await fetch(url);
-const data = await res.json();
+  const url = "https://script.google.com/macros/s/AKfycbx3QuxzX27N2eEGVkF0bDatl2kiwFst2b547AmBvDiPBTPuWWS-eRGjplp6ZHYox4i4/exec"; // 你的 GAS URL
+  try {
+    const res = await fetch(url);
+    const data = await res.json();
 
-carousel.innerHTML = ""; // 清空
+    carousel.innerHTML = ""; // 清空原有
 
-cardData.forEach(card => {
-const sheet = data[card.key];
-const headers = sheet[0];
-const rows = sheet.slice(1);
-carousel.innerHTML += createCardHTML(card, headers, rows);
-});
+    cardData.forEach(card => {
+      const sheetObj = data[card.key];
+      if(!sheetObj || !sheetObj.headers || !sheetObj.rows) {
+        console.warn("sheetObj 不存在或格式错误:", card.key);
+        return;
+      }
+      const headers = sheetObj.headers;
+      const rows = sheetObj.rows;
+      carousel.innerHTML += createCardHTML(card, headers, rows);
+    });
 
-updateCarousel();
-} catch (e) {
-console.error("加载 Google Sheet 时发生错误：", e);
+    updateCarousel();
+  } catch (e) {
+    console.error("加载 Google Sheet 时发生错误：", e);
+  }
 }
-}
 
-/* ========== 轮播逻辑（保留） ========== */
+/* ===== 轮播 ===== */
 function updateCarousel() {
-const width = carousel.children[0].offsetWidth;
-carousel.style.transform = `translateX(-${width * currentIndex}px)`;
-document.body.style.background = colors[currentIndex];
+  if(carousel.children.length === 0) return;
+  const width = carousel.children[0].offsetWidth;
+  carousel.style.transform = `translateX(-${width * currentIndex}px)`;
+  document.body.style.background = colors[currentIndex];
 }
 
 function nextSlide() { currentIndex = (currentIndex + 1) % cardData.length; updateCarousel(); }
 function prevSlide() { currentIndex = (currentIndex - 1 + cardData.length) % cardData.length; updateCarousel(); }
 
-/* 点击换页 */
+/* 点击切换 */
 document.querySelector(".left-zone").addEventListener("click", prevSlide);
 document.querySelector(".right-zone").addEventListener("click", nextSlide);
 
-/* 触屏换页 */
+/* 触屏切换 */
 let startX = 0;
 document.body.addEventListener("touchstart", e => startX = e.touches[0].clientX);
 document.body.addEventListener("touchend", e => {
-const diff = e.changedTouches[0].clientX - startX;
-if (diff > 50) prevSlide();
-else if (diff < -50) nextSlide();
+  const diff = e.changedTouches[0].clientX - startX;
+  if(diff > 50) prevSlide();
+  else if(diff < -50) nextSlide();
 });
 
-/* ========== 时间更新（保留） ========== */
+/* ===== 时间显示 ===== */
 function updateDateTime() {
-const now = new Date();
-document.getElementById("date").textContent = now.toLocaleDateString('en-GB');
-document.getElementById("time").textContent = now.toLocaleTimeString('en-US');
-document.getElementById("weekday").textContent = now.toLocaleDateString('en-GB', { weekday: 'long' });
+  const now = new Date();
+  document.getElementById("date").textContent = now.toLocaleDateString('en-GB');
+  document.getElementById("time").textContent = now.toLocaleTimeString('en-US');
+  document.getElementById("weekday").textContent = now.toLocaleDateString('en-GB', { weekday: 'long' });
 }
 setInterval(updateDateTime, 1000);
 updateDateTime();
 
-/* ========== 每 5 分钟自动刷新数据 ========== */
+/* ===== 每 5 分钟刷新一次数据 ===== */
 setInterval(loadDataFromGS, 1 * 15 * 1000);
 
-/* 初始加载 */
+/* ===== 页面初始加载 ===== */
 loadDataFromGS();
 </script>
 
